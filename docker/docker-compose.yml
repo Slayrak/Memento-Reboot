@@ -65,3 +65,4 @@ volumes:
   category-image-data:
   api-data:
   auth-data:
+  

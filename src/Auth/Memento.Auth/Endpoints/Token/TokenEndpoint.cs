@@ -1,3 +1,10 @@
+using FastEndpoints;
+using Memento.Auth.Options;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,12 +12,6 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using FastEndpoints;
-using Memento.Auth.Options;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Memento.Auth.Endpoints.Token;
 
@@ -57,6 +58,16 @@ public sealed class TokenEndpoint(UserManager<IdentityUser> userManager, IOption
 
         var handler = new JsonWebTokenHandler();
         string accessToken = handler.CreateToken(tokenDescriptor);
+
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.Lax,
+            //Secure = true, // return when finished with HTTPS
+            Expires = DateTime.UtcNow.AddMinutes(_jwtOptions.ExpirationInMinutes),
+        };
+
+        HttpContext.Response.Cookies.Append("AuthToken", accessToken, cookieOptions);
 
         await Send.OkAsync(new TokenResponse { AccessToken = accessToken }, cancellation: token);
     }

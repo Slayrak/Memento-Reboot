@@ -2,12 +2,14 @@ using FastEndpoints;
 using Memento.Auth.Database;
 using Memento.Auth.Extensions;
 using Memento.Auth.Options;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +21,21 @@ builder.Services.AddFastEndpoints();
 builder.Services.AddAuthorization();
 builder.Services
     .AddAuthentication(IdentityConstants.BearerScheme)
-    .AddJwtBearer();
+    .AddJwtBearer(JwtOptions =>
+    {
+        JwtOptions.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.TryGetValue("AuthToken", out var token))
+                {
+                    context.Token = token;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+    });
 
 builder.Services
     .AddIdentity<IdentityUser, IdentityRole>()
